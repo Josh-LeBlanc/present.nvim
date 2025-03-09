@@ -1,8 +1,5 @@
 local M = {}
 
-M.setup = function()
-end
-
 ---@class present.Slides
 ---@field slides string[]: the slides of the file
 
@@ -101,6 +98,16 @@ M.start_presentation = function(opts)
     })
 
     vim.api.nvim_buf_set_lines(float.buf, 0, -1, false, parsed.slides[current_slide])
+end
+
+M.setup = function()
+
+    local present = require("present")
+
+    vim.keymap.set("n", "<leader>pp", function()
+	present.start_presentation()
+    end)
+
 end
 
 return M
