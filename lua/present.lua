@@ -38,8 +38,8 @@ local function open_floating_window(opts)
     local height = vim.o.lines
 
     -- Default size to 80% of screen if not provided
-    local win_width = opts.width or math.floor(width * 0.8)
-    local win_height = opts.height or math.floor(height * 0.8)
+    local win_width = opts.width or width
+    local win_height = opts.height or height
 
     -- Calculate center position
     local row = math.floor((height - win_height) / 2)
@@ -56,7 +56,7 @@ local function open_floating_window(opts)
         row = row,
         col = col,
         style = "minimal",
-        border = "rounded", -- Change to "single" or "double" if preferred
+        border = { " ", " ", " ", " ", " ", " ", " ", " ", }
     }
 
     -- Open the floating window
@@ -97,6 +97,28 @@ M.start_presentation = function(opts)
 	buffer = float.buf
     })
 
+    local restore = {
+	cmdheight = {
+	    original = vim.o.cmdheight,
+	    present = 0
+	}
+    }
+
+    -- set options for presentation
+    for option, config in pairs(restore) do
+	vim.opt[option] = config.present
+    end
+
+    -- reset values when we are done with presentation
+    vim.api.nvim_create_autocmd("BufLeave", {
+	buffer = float.buf,
+	callback = function()
+	    -- reset options after presentation end
+	    for option, config in pairs(restore) do
+		vim.opt[option] = config.original
+	    end
+	end
+    })
     vim.api.nvim_buf_set_lines(float.buf, 0, -1, false, parsed.slides[current_slide])
 end
 
