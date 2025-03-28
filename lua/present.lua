@@ -225,4 +225,6 @@ M.setup = function()
 
 end
 
+M._parse_slides = parse_slides
+
 return M
