@@ -15,7 +15,5 @@ end
 ### normal mode
 these are the defaults, change them by adding 
 ```lua
-vim.keymap.set("n", "<leader>pp", function()
-	require("present").start_presentation()
-end)
+vim.keymap.set("n", "<leader>pp", ":PresentStart<CR>")
 ```

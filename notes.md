@@ -68,3 +68,7 @@ not going to write all of this down, just go to that file and follow the convent
 he explained how to use a .github/ dir to make (what i assume is a github action?) that runs the tests on push, I am not going to do that but could in the future - he copied most of the stuff from telescope
 
 yeah it's a github action for CI, it runs the tests on each push or pull rquest.
+## part 6 - custom commands and lazy loading
+a few simple commands to show what plugin does
+
+define these in the plugin/ dir

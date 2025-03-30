@@ -216,13 +216,7 @@ M.start_presentation = function(opts)
 end
 
 M.setup = function()
-
-    local present = require("present")
-
-    vim.keymap.set("n", "<leader>pp", function()
-	present.start_presentation()
-    end)
-
+    vim.keymap.set("n", "<leader>pp", ":PresentStart<CR>")
 end
 
 M._parse_slides = parse_slides
