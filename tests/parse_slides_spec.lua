@@ -9,7 +9,8 @@ describe("present.parse_slides", function()
 	    slides = {
 		{
 		    title = '',
-		    body = {}
+		    body = {},
+		    blocks = {},
 		}
 	    }
 	},
@@ -23,7 +24,8 @@ describe("present.parse_slides", function()
 		    title = '# first slide',
 		    body = {
 			"body"
-		    }
+		    },
+		    blocks = {},
 		}
 	    }
 	},
@@ -31,5 +33,36 @@ describe("present.parse_slides", function()
 	    "# first slide",
 	    "body",
 	})
+    end)
+
+    it("should parse a file with one slide and a code block", function()
+
+	local result = parse {
+	    "# first slide",
+	    "body",
+	    "```python",
+	    "print('hello world')",
+	    "```",
+	}
+
+	eq(1, #result.slides)
+
+	local slide = result.slides[1]
+	eq("# first slide", slide.title)
+	eq( {
+	    "body",
+	    "```python",
+	    "print('hello world')",
+	    "```",
+	}, slide.body)
+
+	local blocks = {
+	    {
+		language = "python",
+		body = "print('hello world')"
+	    }
+	}
+	eq(blocks, slide.blocks)
+
     end)
 end)

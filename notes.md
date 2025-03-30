@@ -72,3 +72,13 @@ yeah it's a github action for CI, it runs the tests on each push or pull rquest.
 a few simple commands to show what plugin does
 
 define these in the plugin/ dir
+
+defined a command that lazy loads and starts the presentation
+## part 7 - executing markdown code blocks live
+we are parsing the slides differently so that they have a list of code blocks which have fields for the language of the block and the body
+
+to execute those blocks, at least in lua, we are overwriting the print function to another function
+
+`noaucommand = true` when creating a window to not close out of the other windows, thats usefule
+
+but this is quote cool, only works for windows right now and only considers the first code block, but we could change that fairly easily

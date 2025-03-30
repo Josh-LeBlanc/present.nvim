@@ -3,9 +3,14 @@ local M = {}
 ---@class present.Slides
 ---@field slides present.Slide[]: the slides of the file
 
+---@class present.Block
+---@field language string: language of the codeblock
+---@field body string: body of the codeblock
+
 ---@class present.Slide
 ---@field title string
 ---@field body string[]
+---@field blocks present.Block[]: a codeblock
 
 --- Takes some lines and parses them
 ---@param lines string[]: lines in the buffer
@@ -15,7 +20,8 @@ local parse_slides = function(lines)
     local slides = { slides = {} }
     local current_slide = {
 	title = "",
-	body = {}
+	body = {},
+	blocks = {},
     }
 
     local seperator = "^#"
@@ -28,7 +34,8 @@ local parse_slides = function(lines)
 
 	    current_slide = {
 		title = line,
-		body = {}
+		body = {},
+		blocks = {},
 	    }
 	else
 	    table.insert(current_slide.body, line)
@@ -36,6 +43,32 @@ local parse_slides = function(lines)
     end
 
     table.insert(slides.slides, current_slide)
+
+    for _, slide in ipairs(slides.slides) do
+	local block = {
+	    language = nil,
+	    body = "",
+	}
+	local inside_block = false
+
+	for _, line in ipairs(slide.body) do
+	    if vim.startswith(line, "```") then
+		if not inside_block then
+		    inside_block = true
+		    block.language = string.sub(line, 4)
+		else
+		    inside_block = false
+		    block.body = vim.trim(block.body)
+		    table.insert(slide.blocks, block)
+		    block = {}
+		end
+	    else
+		if inside_block then
+		    block.body = block.body .. line .. "\n"
+		end
+	    end
+	end
+    end
 
     return slides
 end
@@ -165,6 +198,74 @@ M.start_presentation = function(opts)
 
     present_keymap("n", "q", function()
 	vim.api.nvim_win_close(state.float.body.win, true)
+    end)
+
+    present_keymap("n", "x", function()
+	local slide = state.parsed.slides[state.current_slide]
+
+	-- making a way to work with other languages later
+
+	-- for now we work with lua
+	local block = slide.blocks[1]
+	if not block then
+	    print("No blocks on this page")
+	    return
+	end
+
+	-- override the built in print function, bruh
+	-- save original
+	local original_print = print
+
+	-- table to capture print messages
+	local output = {"", "# code", "", "```" .. block.language,}
+	vim.list_extend(output, vim.split(block.body, "\n"))
+	table.insert(output, "```")
+
+	-- redefine the print function
+	print = function(...)
+	    local args = { ... }
+	    local message = table.concat(vim.tbl_map(tostring, args), "\t")
+	    table.insert(output, message)
+	end
+
+	-- call the provided function
+	local chunk = loadstring(block.body)
+	pcall(function()
+	    table.insert(output, "")
+	    table.insert(output, "# Output")
+	    table.insert(output, "")
+	    if chunk == nil then
+		print("this should never happen")
+		return
+	    end
+	    chunk()
+	end)
+
+	print = original_print
+
+	local buf = vim.api.nvim_create_buf(false, true)
+	local temp_width = math.floor(vim.o.columns * 0.8)
+	local temp_height = math.floor(vim.o.lines * 0.8)
+	local win = vim.api.nvim_open_win(buf, true, {
+	    relative = "editor",
+	    style = "minimal",
+	    width = temp_width,
+	    height = temp_height,
+	    row = math.floor((vim.o.lines - temp_height) / 2),
+	    col = math.floor((vim.o.columns - temp_width) / 2),
+	    noautocmd = true,
+	    border = "rounded",
+	})
+
+	-- quit keymap
+	vim.keymap.set("n", "q", function()
+	    vim.api.nvim_win_close(win, true)
+	end, {
+	    buffer = buf
+	})
+
+	vim.bo[buf].filetype = "markdown"
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
     end)
 
     local restore = {
