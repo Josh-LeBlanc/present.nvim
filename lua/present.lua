@@ -1,5 +1,67 @@
 local M = {}
 
+local options = {}
+
+--- default executor lua code
+---@param block present.Block
+local execute_lua_code = function(block)
+    -- override the built in print function, bruh
+    -- save original
+    local original_print = print
+
+    local output = {}
+
+    -- redefine the print function
+    print = function(...)
+	local args = { ... }
+	local message = table.concat(vim.tbl_map(tostring, args), "\t")
+	table.insert(output, message)
+    end
+
+    -- call the provided function
+    local chunk = loadstring(block.body)
+    pcall(function()
+	if chunk == nil then
+	    table.insert(output, "<<<BROKEN CODE>>>")
+	else
+	    chunk()
+	end
+	return output
+    end)
+
+    print = original_print
+    return output
+
+end
+
+M.create_system_executor = function(program)
+    return function(block)
+	local tempfile = vim.fn.tempname()
+	vim.fn.writefile(vim.split(block.body, "\n"), tempfile)
+	local result = vim.system({program, tempfile}, {text = true}):wait()
+	return vim.split(result.stdout, "\n")
+    end
+end
+
+-- local execute_js_code = M.create_system_executor("node")
+-- local execute_py_code = M.create_system_executor("python")
+
+M.setup = function(opts)
+    opts = opts or {}
+    opts.executors = opts.executors or {}
+
+    for language, exe in pairs(opts.executors) do
+	opts.executors[language] = M.create_system_executor(exe)
+    end
+    opts.executors.lua = opts.executors.lua or execute_lua_code
+    opts.executors.javascript = opts.executors.javascript or M.create_system_executor("node")
+    opts.executors.python = opts.executors.python or M.create_system_executor("python")
+
+    options = opts
+
+    vim.keymap.set("n", "<leader>pp", ":PresentStart<CR>")
+end
+
 ---@class present.Slides
 ---@field slides present.Slide[]: the slides of the file
 
@@ -60,7 +122,10 @@ local parse_slides = function(lines)
 		    inside_block = false
 		    block.body = vim.trim(block.body)
 		    table.insert(slide.blocks, block)
-		    block = {}
+		    block = {
+			language = nil,
+			body = "",
+		    }
 		end
 	    else
 		if inside_block then
@@ -203,8 +268,6 @@ M.start_presentation = function(opts)
     present_keymap("n", "x", function()
 	local slide = state.parsed.slides[state.current_slide]
 
-	-- making a way to work with other languages later
-
 	-- for now we work with lua
 	local block = slide.blocks[1]
 	if not block then
@@ -212,36 +275,22 @@ M.start_presentation = function(opts)
 	    return
 	end
 
-	-- override the built in print function, bruh
-	-- save original
-	local original_print = print
+	local executor = options.executors[block.language]
+	if not executor then
+	    print("no valid executor for this language")
+	    return
+	end
 
 	-- table to capture print messages
-	local output = {"", "# code", "", "```" .. block.language,}
+	local output = {"# code", "", "```" .. block.language,}
 	vim.list_extend(output, vim.split(block.body, "\n"))
 	table.insert(output, "```")
 
-	-- redefine the print function
-	print = function(...)
-	    local args = { ... }
-	    local message = table.concat(vim.tbl_map(tostring, args), "\t")
-	    table.insert(output, message)
-	end
-
-	-- call the provided function
-	local chunk = loadstring(block.body)
-	pcall(function()
-	    table.insert(output, "")
-	    table.insert(output, "# Output")
-	    table.insert(output, "")
-	    if chunk == nil then
-		print("this should never happen")
-		return
-	    end
-	    chunk()
-	end)
-
-	print = original_print
+	table.insert(output, "")
+	table.insert(output, "# output")
+	table.insert(output, "")
+	print(executor(block))
+	vim.list_extend(output, executor(block))
 
 	local buf = vim.api.nvim_create_buf(false, true)
 	local temp_width = math.floor(vim.o.columns * 0.8)
@@ -314,10 +363,6 @@ M.start_presentation = function(opts)
     })
 
     set_slide_content(state.current_slide)
-end
-
-M.setup = function()
-    vim.keymap.set("n", "<leader>pp", ":PresentStart<CR>")
 end
 
 M._parse_slides = parse_slides

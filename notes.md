@@ -82,3 +82,6 @@ to execute those blocks, at least in lua, we are overwriting the print function 
 `noaucommand = true` when creating a window to not close out of the other windows, thats usefule
 
 but this is quote cool, only works for windows right now and only considers the first code block, but we could change that fairly easily
+## part 8 - user customization
+we changed the code execution to allow the user to select their own executors in `require"present".setup()`, now we can execute all interpreted languages. compiled languages would be harder i think but not impossible
+## this has been so informative ty teej

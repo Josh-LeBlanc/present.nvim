@@ -1,10 +1,18 @@
 # present.nvim
 this plugin turns a markdown file into a presentation in nvim
 # usage
+put this in your nvim config, you can set up your own executors for executing code blocks
 ```lua
 config = function()
     local present = require("present")
-    present.setup()
+    present.setup({
+        executors = {
+            python = "python",
+            javascript = "node",
+            -- add in the style of
+            -- <markdown-code-block-label> = <command to run code>
+        }
+    })
 end
 ```
 ## keybinds
@@ -12,9 +20,9 @@ end
 `n` -> next slide
 `p` -> previous slide
 `q` -> quit
-`x` -> execute lua codeblock in slide 
+`x` -> execute lua codeblock in slide
 ### normal mode
-these are the defaults, change them by adding 
+default start presentation keybind
 ```lua
 vim.keymap.set("n", "<leader>pp", ":PresentStart<CR>")
 ```
