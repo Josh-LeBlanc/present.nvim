@@ -1,5 +1,8 @@
 # present.nvim
 this plugin turns a markdown file into a presentation in nvim
+# features
+- each markdown heading becomes the title of a presentation slide
+- you can execute code in markdown codeblocks, you must specify the executors in the config as shown below
 # usage
 put this in your nvim config, you can set up your own executors for executing code blocks
 ```lua
@@ -17,9 +20,9 @@ end
 ```
 ## keybinds
 ### in presentation
-`n` -> next slide
-`p` -> previous slide
-`q` -> quit
+`n` -> next slide<br>
+`p` -> previous slide<br>
+`q` -> quit<br>
 `x` -> execute lua codeblock in slide
 ### normal mode
 default start presentation keybind
